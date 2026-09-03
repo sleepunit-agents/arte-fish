@@ -111,3 +111,21 @@ a:focus-visible {
 .skip-link:focus {
   top: 1rem;
 }
+
+/* seam — inline player. color-scheme: dark asks the browser for dark
+   native controls so the bar doesn't glow white on the page. */
+figure.audio {
+  margin: 1.5rem 0;
+}
+
+figure.audio audio {
+  display: block;
+  width: 100%;
+  color-scheme: dark;
+}
+
+figure.audio figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+}
