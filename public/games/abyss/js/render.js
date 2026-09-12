@@ -688,7 +688,7 @@ class Renderer {
         this.ctx.fillText('[ PRESS ENTER TO DESCEND AGAIN ]', w / 2, h / 2 + 32);
 
         this.ctx.textAlign = 'left';
-        this.ctx.letterSpacing = '0';
+        this.ctx.letterSpacing = '0px';
     }
 
     // Word-wrap helper for canvas text. Returns lines that fit maxWidth
@@ -722,22 +722,29 @@ class Renderer {
         ctx.fillStyle = 'rgba(0, 4, 8, 0.82)';
         ctx.fillRect(0, 0, w, h);
 
-        const panelW = Math.min(440, w - 40);
-        const padX = 26;
-        const textW = panelW - padX * 2 - 34; // minus the [n] gutter
+        const panelW = Math.min(460, w - 40);
+        const padX = 32;
+        const gutter = 34; // the [n] column
+        const textW = panelW - padX * 2 - gutter;
         const nameFont = 'bold 13px "Courier New", monospace';
         const descFont = '11px "Courier New", monospace';
-        const descLineH = 14;
-        const optionGap = 16;
+        const descLineH = 15;
+        const optionGap = 20;
 
-        // Measure first so the panel fits its contents
+        // Measure first so the panel fits its contents. The measurement has
+        // to happen under exactly the state the text is drawn with: canvas
+        // letterSpacing is sticky, and '0' without a unit is silently
+        // rejected, so a leftover '0.08em' from the title was widening the
+        // drawn text past what wrapText had measured (the "Stairs location"
+        // overflow on floor 1).
+        ctx.letterSpacing = '0px';
         ctx.font = descFont;
         const wrapped = upgrades.map(u => this.wrapText(u.desc, textW));
         let optionsH = 0;
         for (const lines of wrapped) optionsH += 18 + lines.length * descLineH + optionGap;
-        const headerH = 62;
-        const footerH = 30;
-        const panelH = headerH + optionsH + footerH;
+        const headerH = 72;
+        const footerH = 38;
+        const panelH = headerH + optionsH + footerH - optionGap + 8;
         const px = Math.round((w - panelW) / 2);
         const py = Math.round((h - panelH) / 2);
 
@@ -754,19 +761,19 @@ class Renderer {
         ctx.letterSpacing = '0.25em';
         ctx.font = '10px "Courier New", monospace';
         ctx.fillStyle = '#2a7a8a';
-        ctx.fillText('SYSTEM MODIFICATION', w / 2, py + 24);
+        ctx.fillText('SYSTEM MODIFICATION', w / 2, py + 28);
 
         ctx.letterSpacing = '0.08em';
         ctx.font = 'bold 14px "Courier New", monospace';
         ctx.fillStyle = '#3df7ff';
-        ctx.fillText(`FLOOR ${currentFloor} COMPLETE — CHOOSE ONE`, w / 2, py + 46);
+        ctx.fillText(`FLOOR ${currentFloor} COMPLETE — CHOOSE ONE`, w / 2, py + 52);
 
         // Options
         ctx.textAlign = 'left';
-        ctx.letterSpacing = '0';
+        ctx.letterSpacing = '0px';
         const labelX = px + padX;
-        const textX = labelX + 34;
-        let y = py + headerH + 14;
+        const textX = labelX + gutter;
+        let y = py + headerH + 16;
         upgrades.forEach((upgrade, i) => {
             ctx.font = nameFont;
             ctx.fillStyle = '#3df7ff';
@@ -787,10 +794,10 @@ class Renderer {
         ctx.letterSpacing = '0.2em';
         ctx.font = '9px "Courier New", monospace';
         ctx.fillStyle = '#2a7a8a';
-        ctx.fillText('PRESS 1 2 3', w / 2, py + panelH - 12);
+        ctx.fillText('PRESS 1 2 3', w / 2, py + panelH - 16);
 
         ctx.textAlign = 'left';
-        ctx.letterSpacing = '0';
+        ctx.letterSpacing = '0px';
     }
 
     // Void ending screen — the true ending. No restart. Just the screen.
@@ -823,7 +830,7 @@ class Renderer {
         this.ctx.fillText('RECORDING ENDS.', w / 2, h / 2 + 12);
 
         this.ctx.textAlign = 'left';
-        this.ctx.letterSpacing = '0';
+        this.ctx.letterSpacing = '0px';
     }
 
     // Loop transition screen — shown after defeating all Leviathans
@@ -866,6 +873,6 @@ class Renderer {
         this.ctx.fillText('[ PRESS ENTER TO DESCEND AGAIN ]', w / 2, h / 2 + 58);
 
         this.ctx.textAlign = 'left';
-        this.ctx.letterSpacing = '0';
+        this.ctx.letterSpacing = '0px';
     }
 }
