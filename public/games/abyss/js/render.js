@@ -8,9 +8,17 @@ class Renderer {
         this.ctx = canvas.getContext('2d');
         this.tileSize = TILE_SIZE;
 
-        // Set canvas size based on map dimensions
-        this.canvas.width = MAP_WIDTH * this.tileSize;
-        this.canvas.height = MAP_HEIGHT * this.tileSize;
+        // Logical size in CSS pixels; the backing store is scaled by
+        // devicePixelRatio so text and tiles stay crisp on HiDPI / zoomed
+        // displays (the 8px upgrade text was a nearest-neighbour smear at 175%).
+        this.width = MAP_WIDTH * this.tileSize;
+        this.height = MAP_HEIGHT * this.tileSize;
+        this.dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+        this.canvas.width = Math.round(this.width * this.dpr);
+        this.canvas.height = Math.round(this.height * this.dpr);
+        this.canvas.style.width = `${this.width}px`;
+        this.canvas.style.height = `${this.height}px`;
+        this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
         // Color palette - dark, bioluminescent aesthetic
         // floor/wall/wallExplored/floorExplored/wallHighlight shift per depth tier
@@ -64,7 +72,7 @@ class Renderer {
 
     clear() {
         this.ctx.fillStyle = this.colors.background;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillRect(0, 0, this.width, this.height);
     }
 
     updateColorsForFloor(floor) {
@@ -138,7 +146,7 @@ class Renderer {
         if (this.damageFlash > 0) {
             const alpha = this.damageFlash / 10;
             this.ctx.fillStyle = `rgba(255, 0, 0, ${alpha * 0.3})`;
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.fillRect(0, 0, this.width, this.height);
             this.damageFlash--;
         }
     }
@@ -643,8 +651,8 @@ class Renderer {
     }
 
     renderGameOver(player) {
-        const w = this.canvas.width;
-        const h = this.canvas.height;
+        const w = this.width;
+        const h = this.height;
 
         // Dark overlay
         this.ctx.fillStyle = 'rgba(0, 4, 8, 0.88)';
@@ -683,59 +691,113 @@ class Renderer {
         this.ctx.letterSpacing = '0';
     }
 
-    // Upgrade selection screen — shown when player finds stairs
-    renderUpgradeScreen(upgrades, currentFloor) {
-        const w = this.canvas.width;
-        const h = this.canvas.height;
+    // Word-wrap helper for canvas text. Returns lines that fit maxWidth
+    // under the current ctx.font.
+    wrapText(text, maxWidth) {
+        const words = text.split(' ');
+        const lines = [];
+        let line = '';
+        for (const word of words) {
+            const trial = line ? `${line} ${word}` : word;
+            if (this.ctx.measureText(trial).width > maxWidth && line) {
+                lines.push(line);
+                line = word;
+            } else {
+                line = trial;
+            }
+        }
+        if (line) lines.push(line);
+        return lines;
+    }
 
-        // Dark overlay
-        this.ctx.fillStyle = 'rgba(0, 4, 8, 0.92)';
-        this.ctx.fillRect(0, 0, w, h);
+    // Upgrade selection screen — shown when player finds stairs.
+    // Solid panel, sized to the text; descriptions wrap inside it instead of
+    // running off the right edge of the canvas.
+    renderUpgradeScreen(upgrades, currentFloor) {
+        const w = this.width;
+        const h = this.height;
+        const ctx = this.ctx;
+
+        // Dim the world
+        ctx.fillStyle = 'rgba(0, 4, 8, 0.82)';
+        ctx.fillRect(0, 0, w, h);
+
+        const panelW = Math.min(440, w - 40);
+        const padX = 26;
+        const textW = panelW - padX * 2 - 34; // minus the [n] gutter
+        const nameFont = 'bold 13px "Courier New", monospace';
+        const descFont = '11px "Courier New", monospace';
+        const descLineH = 14;
+        const optionGap = 16;
+
+        // Measure first so the panel fits its contents
+        ctx.font = descFont;
+        const wrapped = upgrades.map(u => this.wrapText(u.desc, textW));
+        let optionsH = 0;
+        for (const lines of wrapped) optionsH += 18 + lines.length * descLineH + optionGap;
+        const headerH = 62;
+        const footerH = 30;
+        const panelH = headerH + optionsH + footerH;
+        const px = Math.round((w - panelW) / 2);
+        const py = Math.round((h - panelH) / 2);
+
+        // Panel
+        ctx.fillStyle = '#020d14';
+        ctx.fillRect(px, py, panelW, panelH);
+        ctx.strokeStyle = '#0f4a5a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 0.5, py + 0.5, panelW - 1, panelH - 1);
 
         // Header
-        this.ctx.font = '9px "Courier New", monospace';
-        this.ctx.letterSpacing = '0.2em';
-        this.ctx.fillStyle = '#1a4a5a';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText('SYSTEM MODIFICATION', w / 2, h / 2 - 70);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.letterSpacing = '0.25em';
+        ctx.font = '10px "Courier New", monospace';
+        ctx.fillStyle = '#2a7a8a';
+        ctx.fillText('SYSTEM MODIFICATION', w / 2, py + 24);
 
-        this.ctx.font = '10px "Courier New", monospace';
-        this.ctx.fillStyle = '#3df7ff';
-        this.ctx.fillText(`FLOOR ${currentFloor} COMPLETE — CHOOSE ONE`, w / 2, h / 2 - 52);
+        ctx.letterSpacing = '0.08em';
+        ctx.font = 'bold 14px "Courier New", monospace';
+        ctx.fillStyle = '#3df7ff';
+        ctx.fillText(`FLOOR ${currentFloor} COMPLETE — CHOOSE ONE`, w / 2, py + 46);
 
-        // Render each upgrade option
-        const startY = h / 2 - 28;
-        const lineH = 34;
-
+        // Options
+        ctx.textAlign = 'left';
+        ctx.letterSpacing = '0';
+        const labelX = px + padX;
+        const textX = labelX + 34;
+        let y = py + headerH + 14;
         upgrades.forEach((upgrade, i) => {
-            const y = startY + i * lineH;
+            ctx.font = nameFont;
+            ctx.fillStyle = '#3df7ff';
+            ctx.fillText(`[${i + 1}]`, labelX, y);
+            ctx.fillStyle = '#d0f0e8';
+            ctx.fillText(upgrade.name, textX, y);
 
-            // Key indicator
-            this.ctx.font = 'bold 10px "Courier New", monospace';
-            this.ctx.fillStyle = '#3df7ff';
-            this.ctx.textAlign = 'left';
-            const labelX = w / 2 - 100;
-            this.ctx.fillText(`[${i + 1}]`, labelX, y);
-
-            // Upgrade name
-            this.ctx.fillStyle = '#aaddcc';
-            this.ctx.fillText(upgrade.name, labelX + 28, y);
-
-            // Description
-            this.ctx.font = '8px "Courier New", monospace';
-            this.ctx.fillStyle = '#3a6a5a';
-            this.ctx.fillText(upgrade.desc, labelX + 28, y + 13);
+            ctx.font = descFont;
+            ctx.fillStyle = '#6fb8a8';
+            wrapped[i].forEach((line, j) => {
+                ctx.fillText(line, textX, y + 16 + j * descLineH);
+            });
+            y += 18 + wrapped[i].length * descLineH + optionGap;
         });
 
-        this.ctx.textAlign = 'left';
-        this.ctx.letterSpacing = '0';
+        // Footer hint
+        ctx.textAlign = 'center';
+        ctx.letterSpacing = '0.2em';
+        ctx.font = '9px "Courier New", monospace';
+        ctx.fillStyle = '#2a7a8a';
+        ctx.fillText('PRESS 1 2 3', w / 2, py + panelH - 12);
+
+        ctx.textAlign = 'left';
+        ctx.letterSpacing = '0';
     }
 
     // Void ending screen — the true ending. No restart. Just the screen.
     // "SIGNAL LOST AT [depth]m. RECORDING ENDS."
     renderVoidEnding(player) {
-        const w = this.canvas.width;
-        const h = this.canvas.height;
+        const w = this.width;
+        const h = this.height;
 
         // Near-total black
         this.ctx.fillStyle = '#010102';
@@ -766,8 +828,8 @@ class Renderer {
 
     // Loop transition screen — shown after defeating all Leviathans
     renderLoopTransition(nextLoop, player) {
-        const w = this.canvas.width;
-        const h = this.canvas.height;
+        const w = this.width;
+        const h = this.height;
 
         // Near-black overlay with faint crimson (you were just on floor 5)
         this.ctx.fillStyle = 'rgba(8, 0, 2, 0.94)';

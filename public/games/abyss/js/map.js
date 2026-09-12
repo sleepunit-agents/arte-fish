@@ -157,7 +157,33 @@ class GameMap {
     clearVisibility() {
         for (let key in this.tiles) {
             this.tiles[key].visible = false;
+            this.tiles[key].lit = false;
         }
+    }
+
+    // Mark tiles lit by an environmental source (Anglerfish lure, item glow).
+    // Lit is not seen: a lit tile only becomes visible if the player has line
+    // of sight to it — resolveLighting() does that intersection. Without it,
+    // a lure behind a wall revealed the whole room it stood in.
+    addLight(x, y, radius) {
+        this.fov.compute(x, y, radius, (x, y) => {
+            const tile = this.tiles[`${x},${y}`];
+            if (tile) tile.lit = true;
+        });
+    }
+
+    // Reveal lit tiles the player can actually see. Line of sight here is
+    // unbounded by view radius — a lure across a dark room is visible from
+    // the far side; one around a corner is not.
+    resolveLighting(px, py) {
+        const reach = Math.max(this.width, this.height);
+        this.fov.compute(px, py, reach, (x, y) => {
+            const tile = this.tiles[`${x},${y}`];
+            if (tile && tile.lit) {
+                tile.visible = true;
+                tile.explored = true;
+            }
+        });
     }
 
     // Add a light source / FOV origin — marks tiles as visible without clearing.

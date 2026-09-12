@@ -688,11 +688,14 @@ class Game {
         }
         this.map.addFOV(this.player.x, this.player.y, effectiveViewRadius);
 
-        // Anglerfish emit light from their lures (radius breathes with lureDim)
+        // Anglerfish emit light from their lures (radius breathes with lureDim).
+        // Light is not sight: lit tiles only show if the player has line of
+        // sight to them (resolveLighting below). A lure in the next room over
+        // used to reveal that room's layout through the wall.
         if (this.enemyManager) {
             for (const enemy of this.enemyManager.enemies) {
                 if (enemy.type === 'anglerfish' && enemy.isAlive()) {
-                    this.map.addFOV(enemy.x, enemy.y, enemy.lightRadius);
+                    this.map.addLight(enemy.x, enemy.y, enemy.lightRadius);
                 }
             }
         }
@@ -700,9 +703,11 @@ class Game {
         // On Floor 1: items emit faint 1-tile glow (breadcrumbs in the dark)
         if (this.currentFloor === 1 && this.itemManager) {
             for (const item of this.itemManager.items) {
-                this.map.addFOV(item.x, item.y, 1);
+                this.map.addLight(item.x, item.y, 1);
             }
         }
+
+        this.map.resolveLighting(this.player.x, this.player.y);
     }
 
     render() {
@@ -713,5 +718,6 @@ class Game {
 // Start the game when page loads
 window.addEventListener('DOMContentLoaded', () => {
     const game = new Game();
+    window.game = game; // reachable from devtools / headless checks
     game.setupInput();
 });

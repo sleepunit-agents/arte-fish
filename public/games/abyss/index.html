@@ -68,8 +68,8 @@
 
     #gameCanvas {
       display: block;
+      box-sizing: content-box; /* CSS size set by the renderer is the drawing area; border sits outside */
       border: 1px solid #0a3040;
-      image-rendering: pixelated;
     }
 
     #message-log {
