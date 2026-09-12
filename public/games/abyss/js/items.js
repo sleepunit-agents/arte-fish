@@ -51,6 +51,15 @@ class ItemManager {
         }
     }
 
+    // Floor drops: `count` pickups, each a hull repair kit with probability
+    // TUNING.hullKitShare, otherwise an oxygen canister.
+    spawnDrops(map, count) {
+        for (let i = 0; i < count; i++) {
+            const type = Math.random() < TUNING.hullKitShare ? 'hull' : 'oxygen';
+            this.spawnItems(map, 1, type);
+        }
+    }
+
     // Get item at position
     getAt(x, y) {
         return this.items.find(item => item.x === x && item.y === y);
@@ -110,8 +119,14 @@ const UPGRADE_POOL = {
         {
             key: 'o2_recycler',
             name: 'O2 Recycler',
-            desc: 'Rebreather loop. Oxygen depletes 33% slower permanently.',
+            desc: `Rebreather loop. Oxygen depletes ${Math.round(TUNING.recyclerStep * 100)}% slower permanently. Recovers ${Math.round(TUNING.upgradeRefillShare * 100)}% of spent oxygen.`,
             icon: '[O2+]'
+        },
+        {
+            key: 'bulkhead_bracing',
+            name: 'Bulkhead Bracing',
+            desc: `Cross-braced frames. Hull takes ${Math.round(TUNING.bracingStep * 100)}% less damage permanently. Patches ${Math.round(TUNING.upgradeRefillShare * 100)}% of current damage.`,
+            icon: '[BRACE]'
         },
     ],
     // Uncommon — floor 2+

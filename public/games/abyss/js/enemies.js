@@ -68,6 +68,7 @@ class Enemy {
     // ── LOS Cone Detection ──────────────────────────────────────────────────
     //
     // Returns true if (targetX, targetY) is within this enemy's forward cone.
+    // Angle only — walls are canSee()'s job.
     // The cone is defined by coneThreshold = cos(halfAngle).
     // Subclasses can override for exotic patterns (e.g. dual-cone jellyfish).
     //
@@ -86,6 +87,16 @@ class Enemy {
         return cosAngle >= this.coneThreshold;
     }
 
+    // Range, cone, and line of sight. Before the LOS check, an anglerfish
+    // facing you through solid rock saw you — the cone was pure angle+radius.
+    canSee(player, map) {
+        const dx = player.x - this.x;
+        const dy = player.y - this.y;
+        if (Math.sqrt(dx * dx + dy * dy) > this.detectionRadius) return false;
+        if (!this.isInDetectionCone(player.x, player.y)) return false;
+        return map.hasLineOfSight(this.x, this.y, player.x, player.y, this.detectionRadius + 1);
+    }
+
     // ── Awareness update ─────────────────────────────────────────────────────
     //
     // Called at the start of each enemy turn. Drives state transitions.
@@ -95,16 +106,17 @@ class Enemy {
     //   Turn N+1: player attacks → surprise! THEN flush → AGGRO
     //   Turn N+2: AGGRO, no more surprise
     //
-    updateAwareness(player) {
+    updateAwareness(player, map) {
         const dx = player.x - this.x;
         const dy = player.y - this.y;
         const inRange = Math.sqrt(dx * dx + dy * dy) <= this.detectionRadius;
 
         switch (this.awarenessState) {
             case AWARENESS.UNAWARE: {
-                // UNAWARE: detection requires both range AND line-of-sight cone.
-                // Walking behind an unaware enemy is safe.
-                const detected = inRange && this.isInDetectionCone(player.x, player.y);
+                // UNAWARE: detection requires range, the facing cone, AND an
+                // unobstructed line. Walking behind an unaware enemy is safe;
+                // so is standing on the far side of a wall.
+                const detected = this.canSee(player, map);
                 if (this.pendingAware) {
                     // Flush: go fully AGGRO
                     this.awarenessState = AWARENESS.AGGRO;
@@ -121,7 +133,7 @@ class Enemy {
             case AWARENESS.ALERTED: {
                 // Investigating enemies have their facing locked toward lastKnownPlayerPos.
                 // They detect within their cone — approach from behind to stay hidden.
-                const detected = inRange && this.isInDetectionCone(player.x, player.y);
+                const detected = this.canSee(player, map);
                 if (detected) {
                     // Re-acquired — back to AGGRO, no surprise (already alert)
                     this.awarenessState = AWARENESS.AGGRO;
@@ -134,7 +146,7 @@ class Enemy {
             case AWARENESS.AGGRO:
                 // AGGRO: facing always tracks player — cone check would always pass.
                 // Use simple range check. Deaggro handled by _chaseTurn (map visibility).
-                if (inRange) {
+                if (inRange && map.hasLineOfSight(this.x, this.y, player.x, player.y, this.detectionRadius + 1)) {
                     this.lastKnownPlayerPos = { x: player.x, y: player.y };
                 }
                 break;
@@ -144,7 +156,7 @@ class Enemy {
     // ── AI turn dispatcher ───────────────────────────────────────────────────
 
     takeTurn(player, map, enemies) {
-        this.updateAwareness(player);
+        this.updateAwareness(player, map);
 
         switch (this.awarenessState) {
             case AWARENESS.UNAWARE:
@@ -415,11 +427,11 @@ class PhantomJellyfish extends Enemy {
     // Passive jellyfish don't detect the player from proximity.
     // They only go AGGRO when directly attacked (via the aware setter in combat).
     // Once aggro'd and deaggro'd, they return to passive wandering.
-    updateAwareness(player) {
+    updateAwareness(player, map) {
         if (this.passive && this.awarenessState !== AWARENESS.AGGRO) {
             return; // no proximity detection — drift peacefully
         }
-        super.updateAwareness(player);
+        super.updateAwareness(player, map);
     }
 
     animate() { this.tentaclePulse += this.passive ? 0.05 : 0.1; }

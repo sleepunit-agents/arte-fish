@@ -173,7 +173,7 @@ class Game {
             } else {
                 oxygenCount = 2 + Math.floor(Math.random() * 3); // 2-4 (normal)
             }
-            this.itemManager.spawnItems(this.map, oxygenCount, 'oxygen');
+            this.itemManager.spawnDrops(this.map, oxygenCount); // TUNING.hullKitShare of these are hull kits
         }
         // Pass player so stairs spawn outside starting FOV (min dist = viewRadius + 3)
         this.itemManager.spawnStairs(this.map, this.player, this.player.viewRadius + 3);
@@ -498,6 +498,11 @@ class Game {
                             this.player.replenishOxygen(50);
                             this.itemManager.removeAt(item.x, item.y);
                             this.ui.addMessage('Oxygen canister recovered. +50 O2.', 'pickup');
+                        } else if (item.type === 'hull') {
+                            const before = this.player.hp;
+                            this.player.repairHull(TUNING.hullKitRepair);
+                            this.itemManager.removeAt(item.x, item.y);
+                            this.ui.addMessage(`Hull repair kit applied. +${this.player.hp - before} hull.`, 'pickup');
                         } else if (item.type === 'stairs') {
                             this.itemManager.removeAt(item.x, item.y);
                             // Show upgrade screen before descending
@@ -585,6 +590,7 @@ class Game {
                     }
                 }
 
+                this._noteUnseenApproach();
                 this.ui.update(this.player);
 
                 // Check player death (void ending handled above in oxygen tick)
@@ -659,6 +665,29 @@ class Game {
                     enemy.carriedOxygen = 15;
                 }
             }
+        }
+    }
+
+    // Stealth feedback: you are inside something's detection range, you can
+    // see each other's tiles, and it still hasn't noticed — so it was the
+    // cone. Say so, once per enemy per unaware spell, at most one line a turn,
+    // so flanking reads as a skill and not luck.
+    _noteUnseenApproach() {
+        let said = false;
+        for (const enemy of this.enemyManager.enemies) {
+            if (!enemy.isAlive() || enemy.passive) continue;
+            if (enemy.awarenessState !== AWARENESS.UNAWARE || enemy.pendingAware) {
+                enemy.unseenNoted = false;
+                continue;
+            }
+            if (said || enemy.unseenNoted || !this.map.isVisible(enemy.x, enemy.y)) continue;
+            const dx = this.player.x - enemy.x;
+            const dy = this.player.y - enemy.y;
+            if (Math.sqrt(dx * dx + dy * dy) > enemy.detectionRadius) continue;
+            if (enemy.isInDetectionCone(this.player.x, this.player.y)) continue;
+            enemy.unseenNoted = true;
+            said = true;
+            this.ui.addMessage(`You slip past the ${enemy.name} unseen. It faces away.`, 'stealth');
         }
     }
 

@@ -22,6 +22,7 @@ class Player {
         this.armorBonus = 0;      // reduces incoming damage
         this.attackBonus = 0;     // added to attackPower (kept separate for display)
         this.oxygenDecayRate = 1; // oxygen consumed per 2 turns (default 1)
+        this.hullDamageMult = 1;  // Bulkhead Bracing: share of incoming hull damage taken
         this.depthCharge = false; // one-shot triple damage on next attack
         this.stairsRevealed = false; // sonar mapping for next floor
 
@@ -41,6 +42,10 @@ class Player {
 
     replenishOxygen(amount) {
         this.oxygen = Math.min(this.maxOxygen, this.oxygen + amount);
+    }
+
+    repairHull(amount) {
+        this.hp = Math.min(this.maxHp, this.hp + amount);
     }
 
     descendFloor() {
@@ -127,7 +132,12 @@ class Player {
                 this.attackBonus += 3;
                 break;
             case 'o2_recycler':
-                this.oxygenDecayRate = Math.max(0.5, this.oxygenDecayRate - 0.33);
+                this.oxygenDecayRate = Math.max(TUNING.recyclerMinRate, this.oxygenDecayRate - TUNING.recyclerStep);
+                this.replenishOxygen(Math.round((this.maxOxygen - this.oxygen) * TUNING.upgradeRefillShare));
+                break;
+            case 'bulkhead_bracing':
+                this.hullDamageMult = Math.max(TUNING.bracingMinMult, this.hullDamageMult - TUNING.bracingStep);
+                this.repairHull(Math.round((this.maxHp - this.hp) * TUNING.upgradeRefillShare));
                 break;
         }
     }

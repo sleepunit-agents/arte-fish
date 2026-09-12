@@ -186,6 +186,16 @@ class GameMap {
         });
     }
 
+    // Line of sight from one tile to another, with the same shadowcasting the
+    // player's view uses — walls block an enemy's gaze exactly as they block yours.
+    hasLineOfSight(x0, y0, x1, y1, radius) {
+        let seen = false;
+        this.fov.compute(x0, y0, radius, (x, y) => {
+            if (x === x1 && y === y1) seen = true;
+        });
+        return seen;
+    }
+
     // Add a light source / FOV origin — marks tiles as visible without clearing.
     // Call multiple times to union several light sources.
     addFOV(x, y, radius) {

@@ -281,7 +281,7 @@ class Renderer {
         // SUSPICIOUS+: uses state color (the locked gaze is the threat).
         // Leviathan: no indicator (omnidirectional, always watching).
         if (enemy.facing && enemy.type !== 'leviathan') {
-            const fc = stateColor || 'rgba(255, 255, 255, 0.4)';
+            const fc = stateColor || 'rgba(255, 255, 255, 0.8)';
             this.ctx.fillStyle = fc;
             const cx = x + ts / 2;
             const cy = y + ts / 2;
@@ -308,6 +308,12 @@ class Renderer {
                     this.ctx.lineTo(x + ts - 3, cy + 3);
                     break;
             }
+            // Dark outline under the fill: the dim hint vanished on the
+            // floor 3-4 violet palette.
+            this.ctx.closePath();
+            this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+            this.ctx.lineWidth = 1.5;
+            this.ctx.stroke();
             this.ctx.fill();
         }
 
@@ -529,6 +535,25 @@ class Renderer {
                 // O2 label (small accent)
                 this.ctx.fillStyle = '#3df7ff';
                 this.ctx.fillRect(x + ts / 2 - 1, y + ts / 2, 2, 2);
+            } else if (item.type === 'hull') {
+                // Hull repair kit — red-orange glow, distinct from cyan oxygen
+                const grad = this.ctx.createRadialGradient(
+                    x + ts / 2, y + ts / 2, 0,
+                    x + ts / 2, y + ts / 2, ts * 1.2
+                );
+                grad.addColorStop(0, 'rgba(255, 110, 70, 0.5)');
+                grad.addColorStop(1, 'rgba(255, 110, 70, 0)');
+                this.ctx.fillStyle = grad;
+                this.ctx.fillRect(x - ts / 4, y - ts / 4, ts * 1.5, ts * 1.5);
+
+                // Kit case
+                this.ctx.fillStyle = '#8a3220';
+                this.ctx.fillRect(x + 2, y + 3, ts - 4, ts - 6);
+
+                // Repair cross
+                this.ctx.fillStyle = '#ffd0b0';
+                this.ctx.fillRect(x + ts / 2 - 1, y + 4, 2, ts - 8);
+                this.ctx.fillRect(x + 4, y + ts / 2 - 1, ts - 8, 2);
             } else if (item.type === 'stairs') {
                 // Stairs down - descending symbols with green glow
                 const grad = this.ctx.createRadialGradient(

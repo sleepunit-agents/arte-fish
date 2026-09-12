@@ -35,8 +35,9 @@ class Combat {
     static enemyAttack(enemy, player) {
         const variance = Math.floor(Math.random() * 4) - 1; // -1 to +3
         const rawDamage = Math.max(1, enemy.damage + variance);
-        // Apply player armor reduction (minimum 1 damage)
-        const damage = Math.max(1, rawDamage - (player.armorBonus || 0));
+        // Apply player armor reduction, then Bulkhead Bracing (minimum 1 damage)
+        const plated = rawDamage - (player.armorBonus || 0);
+        const damage = Math.max(1, Math.round(plated * (player.hullDamageMult ?? 1)));
         player.takeDamage(damage);
 
         return {
