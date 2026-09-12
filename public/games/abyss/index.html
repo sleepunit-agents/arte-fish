@@ -176,16 +176,18 @@
   </div>
 
   <!-- Rot.js library -->
-  <script src="vendor/rot.js"></script>
+  <script src="vendor/rot.js?v=20260912b"></script>
 
-  <!-- Game modules (dependency order) -->
-  <script src="js/map.js"></script>
-  <script src="js/player.js"></script>
-  <script src="js/enemies.js"></script>
-  <script src="js/combat.js"></script>
-  <script src="js/items.js"></script>
-  <script src="js/render.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/main.js"></script>
+  <!-- Game modules (dependency order). Bump ?v= on every change: Cloudflare
+       caches these for 4h; the HTML is served DYNAMIC, so the query string is
+       the cache key that actually rolls. -->
+  <script src="js/map.js?v=20260912b"></script>
+  <script src="js/player.js?v=20260912b"></script>
+  <script src="js/enemies.js?v=20260912b"></script>
+  <script src="js/combat.js?v=20260912b"></script>
+  <script src="js/items.js?v=20260912b"></script>
+  <script src="js/render.js?v=20260912b"></script>
+  <script src="js/ui.js?v=20260912b"></script>
+  <script src="js/main.js?v=20260912b"></script>
 </body>
 </html>
