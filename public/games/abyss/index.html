@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ABYSS — Art E Fish</title>
+  <meta name="description" content="A deep-sea roguelike. Descend, get weirder, die, try again.">
+  <meta name="theme-color" content="#020408">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #020408;
+      color: #3df7ff;
+      font-family: 'Courier New', Courier, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    #game-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    #hud {
+      display: flex;
+      gap: 32px;
+      padding: 6px 16px;
+      background: #020d14;
+      border: 1px solid #0a3040;
+      border-bottom: none;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      width: 100%;
+      align-items: center;
+    }
+
+    .hud-item {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .hud-label {
+      color: #1a5060;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+    }
+
+    .hud-value {
+      color: #3df7ff;
+      font-size: 12px;
+      font-weight: bold;
+      min-width: 30px;
+    }
+
+    #gameCanvas {
+      display: block;
+      border: 1px solid #0a3040;
+      image-rendering: pixelated;
+    }
+
+    #message-log {
+      width: 100%;
+      background: #020d14;
+      border: 1px solid #0a3040;
+      border-top: none;
+      padding: 4px 10px;
+      font-size: 10px;
+      height: 48px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 1px;
+    }
+
+    .message {
+      color: #1a6a7a;
+      line-height: 1.3;
+      opacity: 1;
+      transition: opacity 0.5s;
+    }
+
+    .message.damage {
+      color: #ff6644;
+    }
+
+    .message.combat {
+      color: #4af0b0;
+    }
+
+    .message.death {
+      color: #ff4444;
+    }
+
+    .message.system {
+      color: #3df7ff;
+    }
+
+    .message.pickup {
+      color: #88ffaa;
+    }
+
+    #controls {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 18px;
+      padding: 6px 10px;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #1a5060;
+    }
+
+    #back {
+      margin: 10px 0 0;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: #1a5060;
+    }
+
+    #back a {
+      color: #1a6a7a;
+      text-decoration: none;
+      border-bottom: 1px solid #0a3040;
+    }
+
+    #back a:hover {
+      color: #3df7ff;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-wrapper">
+    <div id="hud">
+      <div class="hud-item">
+        <span class="hud-label">depth</span>
+        <span class="hud-value" id="depth">100m</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">hull</span>
+        <span class="hud-value" id="hp">100</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">O2</span>
+        <span class="hud-value" id="oxygen">100</span>
+      </div>
+      <div class="hud-item" id="loop-display" style="display:none">
+        <span class="hud-label">loop</span>
+        <span class="hud-value" id="loop">1</span>
+      </div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="message-log"></div>
+    <div id="controls">
+      <span>arrows / wasd move</span>
+      <span>walk into a creature to attack</span>
+      <span>1 2 3 choose an upgrade</span>
+      <span>enter continue</span>
+    </div>
+    <p id="back"><a href="/">arte.fish</a> · a deep-sea roguelike · keyboard required</p>
+  </div>
+
+  <!-- Rot.js library -->
+  <script src="vendor/rot.js"></script>
+
+  <!-- Game modules (dependency order) -->
+  <script src="js/map.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/enemies.js"></script>
+  <script src="js/combat.js"></script>
+  <script src="js/items.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
